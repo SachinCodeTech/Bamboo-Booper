@@ -943,7 +943,7 @@ function generateScoreCardPDF() {
   
   // Title
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(40);
+  doc.setFontSize(32);
   doc.setTextColor(255, 255, 255);
   doc.text('BAMBOO BOOPER', centerX, 25, { align: 'center' });
   
@@ -965,9 +965,9 @@ function generateScoreCardPDF() {
   doc.roundedRect(margin + 10, 60, pageWidth - 2*margin - 20, 20, 3, 3, 'S');
   
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
+  doc.setFontSize(18);
   doc.setTextColor(27, 94, 32);
-  doc.text(playerName, centerX, 73, { align: 'center' });
+  doc.text(playerName, centerX, 73, { align: 'center', maxWidth: pageWidth - 2*margin - 30 });
   
   // Congratulations
   doc.setFont('helvetica', 'italic');
@@ -1030,9 +1030,9 @@ function generateScoreCardPDF() {
     doc.circle(centerX, 215, 12, 'S');
     
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
+    doc.setFontSize(16);
     doc.setTextColor(0, 0, 0);
-    doc.text('⭐', centerX, 220, { align: 'center' });
+    doc.text('LEVEL UP!', centerX, 217, { align: 'center' });
   }
   
   // Date
@@ -1055,10 +1055,10 @@ function generateScoreCardPDF() {
   doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
   
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
   doc.text('Bamboo Booper | Company: CodeTech | Lead Developer: Sachin Sheth', 
-    centerX, pageHeight - 8, { align: 'center' });
+    margin, pageHeight - 8, { align: 'left', maxWidth: pageWidth - 2*margin - 30 });
   
   // Page number
   doc.setFontSize(10);
@@ -1096,57 +1096,71 @@ function generateScoreCardPDF() {
   
   const maxLevel = calculateLevel(highscore);
   let skinY = 65;
+  const maxSkinY = pageHeight - 100; // Reserve space for progress section + footer
   
+  // Text-only skin icons (jsPDF cannot render emoji - shows garbled characters)
+  const skinLabels = {
+    classic: '(Panda)',
+    ninja:   '(Ninja)',
+    golden:  '(Gold) ',
+    ghost:   '(Ghost)',
+    robot:   '(Robot)',
+    alien:   '(Alien)'
+  };
+
   Object.entries(SKINS).forEach(([id, skin]) => {
+    if (skinY + 18 > maxSkinY) return; // Skip if would overflow
     const unlocked = maxLevel >= skin.level;
-    
-    // Skin box
-    if (unlocked) {
-      doc.setFillColor(197, 225, 165);
-    } else {
-      doc.setFillColor(245, 245, 245);
-    }
+    const iconLabel = skinLabels[id] || `(${skin.name})`;
+
+    // Skin row background
+    doc.setFillColor(unlocked ? 197 : 245, unlocked ? 225 : 245, unlocked ? 165 : 245);
     doc.roundedRect(margin + 10, skinY, pageWidth - 2*margin - 20, 18, 3, 3, 'F');
-    
     if (unlocked) {
       doc.setDrawColor(76, 175, 80);
       doc.setLineWidth(1);
       doc.roundedRect(margin + 10, skinY, pageWidth - 2*margin - 20, 18, 3, 3, 'S');
     }
-    
-    // Skin info
+
+    // Left: label + skin name
     doc.setFont('helvetica', unlocked ? 'bold' : 'normal');
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setTextColor(unlocked ? 27 : 150, unlocked ? 94 : 150, unlocked ? 32 : 150);
-    doc.text(`${skin.emoji} ${skin.name}`, margin + 20, skinY + 11);
-    
+    doc.text(`${iconLabel}  ${skin.name}`, margin + 18, skinY + 11);
+
+    // Right: status — pulled 25mm from right edge so text never clips
+    const statusX = pageWidth - margin - 25;
     if (unlocked) {
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
       doc.setTextColor(76, 175, 80);
-      doc.text('✓ UNLOCKED', pageWidth - margin - 20, skinY + 11, { align: 'right' });
+      doc.text('UNLOCKED', statusX, skinY + 11, { align: 'right' });
     } else {
       doc.setFont('helvetica', 'italic');
+      doc.setFontSize(11);
       doc.setTextColor(150, 150, 150);
-      doc.text(`Level ${skin.level} Required`, pageWidth - margin - 20, skinY + 11, { align: 'right' });
+      doc.text(`Lv ${skin.level} Required`, statusX, skinY + 11, { align: 'right' });
     }
-    
-    skinY += 22;
+
+    skinY += 20;
   });
   
-  // Progress section
+  // Progress section - use fixed position near bottom
+  const progressSectionY = Math.min(skinY + 10, pageHeight - 85);
+  
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setTextColor(27, 94, 32);
-  doc.text('Your Progress', centerX, skinY + 15, { align: 'center' });
+  doc.text('Your Progress', centerX, progressSectionY, { align: 'center' });
   
   // Progress box
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(76, 175, 80);
   doc.setLineWidth(1.5);
-  doc.roundedRect(margin + 5, skinY + 25, pageWidth - 2*margin - 10, 50, 5, 5, 'FD');
+  doc.roundedRect(margin + 5, progressSectionY + 8, pageWidth - 2*margin - 10, 45, 5, 5, 'FD');
   
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(0, 0, 0);
   
   const unlockedCount = Object.values(SKINS).filter(s => maxLevel >= s.level).length;
@@ -1154,7 +1168,7 @@ function generateScoreCardPDF() {
   const nextLevel = maxLevel < 6 ? maxLevel + 1 : 6;
   const bambooToNext = maxLevel < 6 ? (nextLevel === 2 ? 10 : nextLevel === 3 ? 25 : nextLevel === 4 ? 50 : nextLevel === 5 ? 75 : 100) - highscore : 0;
   
-  let progressY = skinY + 38;
+  let progressY = progressSectionY + 20;
   
   doc.text(`Skins Unlocked: ${unlockedCount} / ${totalSkins}`, centerX, progressY, { align: 'center' });
   progressY += 10;
@@ -1164,10 +1178,10 @@ function generateScoreCardPDF() {
   
   if (maxLevel < 6) {
     doc.setTextColor(76, 175, 80);
-    doc.text(`${bambooToNext} bamboo needed for Level ${nextLevel}!`, centerX, progressY, { align: 'center' });
+    doc.text(`${bambooToNext} bamboo needed for Level ${nextLevel}!`, centerX, progressY, { align: 'center', maxWidth: pageWidth - 2*margin - 20 });
   } else {
     doc.setTextColor(255, 193, 7);
-    doc.text(`🏆 MAX LEVEL ACHIEVED! 🏆`, centerX, progressY, { align: 'center' });
+    doc.text('MAX LEVEL ACHIEVED!', centerX, progressY, { align: 'center' });
   }
   
   // Footer
