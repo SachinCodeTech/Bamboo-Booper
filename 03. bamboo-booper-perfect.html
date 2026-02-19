@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#4caf50">
+<title>🐼 Bamboo Booper</title>
+<style>
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html, body { 
+    height: 100%; 
+    width: 100%;
+    margin: 0; 
+    overflow: hidden; 
+    position: fixed;
+  }
+  
+  body {
+    background: linear-gradient(to bottom, #e8f5e9, #c5e1a5);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: #1b5e20;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+
+  .app { 
+    height: 100vh;
+    height: 100dvh;
+    display: flex; 
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Header */
+  header {
+    height: 72px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 2px solid rgba(76, 175, 80, 0.3);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  h1 { 
+    font-size: 18px; 
+    font-weight: 700;
+    margin: 0; 
+    color: #1b5e20;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .level-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #2196f3, #1976d2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  }
+
+  #stats {
+    display: flex;
+    justify-content: space-around;
+    font-size: 12px;
+    font-weight: 600;
+    color: #388e3c;
+  }
+
+  #stats > div {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Game Zone */
+  #game-zone {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #canvas-wrapper {
+    width: 100%;
+    max-width: min(90vw, calc(100vh - 360px));
+    aspect-ratio: 1 / 1;
+    position: relative;
+    margin: 0 auto;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    border: 3px solid #4caf50;
+    border-radius: 16px;
+    background: #f1f8e9;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    touch-action: none;
+    display: block;
+  }
+
+  #mini-stats {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.92);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #388e3c;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+  }
+
+  /* Bottom Controls */
+  .bottom-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.4);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .controller-dock {
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(76, 175, 80, 0.25);
+  }
+
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 58px);
+    grid-template-rows: 58px 8px 58px;
+    gap: 8px;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .dir-btn {
+    width: 58px;
+    height: 58px;
+    font-size: 26px;
+    background: linear-gradient(145deg, #81c784, #66bb6a);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  .dir-btn:active { 
+    transform: scale(0.9);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  #up    { grid-column: 2; grid-row: 1; }
+  #left  { grid-column: 1; grid-row: 3; }
+  #down  { grid-column: 2; grid-row: 3; }
+  #right { grid-column: 3; grid-row: 3; }
+
+  /* Action Buttons */
+  .bottom-action-bar {
+    padding: 8px 12px 12px;
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(76, 175, 80, 0.15);
+  }
+
+  .bottom-action-btn {
+    flex: 1;
+    height: 46px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    border-radius: 24px;
+    color: white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    user-select: none;
+  }
+
+  .bottom-action-btn:active { 
+    transform: scale(0.96);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  #pause-bottom { background: linear-gradient(135deg, #ff9800, #f57c00); }
+  #start-pause  { background: linear-gradient(135deg, #ff7043, #f4511e); }
+  #speed-control { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
+
+  .speed-triangles {
+    font-size: 10px;
+    line-height: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* Footer */
+  footer {
+    height: 24px;
+    font-size: 9px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(76, 175, 80, 0.15);
+    gap: 4px;
+  }
+
+  /* Overlays */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    z-index: 100;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .overlay.show { 
+    opacity: 1; 
+    pointer-events: all; 
+  }
+
+  .overlay h2 { 
+    font-size: clamp(2rem, 8vw, 3rem); 
+    margin: 0 0 16px;
+    font-weight: 800;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .overlay p { 
+    font-size: clamp(1rem, 5vw, 1.3rem); 
+    margin: 6px 0;
+    font-weight: 500;
+  }
+
+  .overlay input {
+    padding: 14px 24px;
+    font-size: 18px;
+    border: 3px solid #4caf50;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1b5e20;
+    text-align: center;
+    margin: 16px 0;
+    width: 280px;
+    max-width: 90%;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .overlay input:focus {
+    outline: none;
+    border-color: #2196f3;
+    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.3);
+  }
+
+  .overlay button {
+    margin: 8px;
+    padding: 16px 36px;
+    font-size: 16px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4caf50, #388e3c);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .overlay button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .overlay button:active {
+    transform: scale(0.95);
+  }
+
+  .overlay button.share-btn {
+    background: linear-gradient(135deg, #2196f3, #1976d2);
+    font-size: 16px;
+    padding: 16px 40px;
+  }
+
+  .overlay button.secondary {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    font-size: 14px;
+    padding: 12px 28px;
+  }
+
+  /* Player Badge */
+  .player-badge {
+    background: linear-gradient(135deg, #ffd700, #ffa000);
+    padding: 16px 32px;
+    border-radius: 24px;
+    margin: 20px 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1b5e20;
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+    border: 3px solid #ff8f00;
+  }
+
+  /* Confetti */
+  .confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    animation: confettiFall 3s linear forwards;
+    z-index: 1000;
+  }
+
+  @keyframes confettiFall {
+    to {
+      transform: translateY(100vh) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  /* Skin Selector */
+  .skin-selector {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .skin-option {
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .skin-option.selected {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.3);
+    transform: scale(1.1);
+  }
+
+  .skin-option.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .skin-option .lock {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 16px;
+  }
+
+  .skin-option .skin-name {
+    font-size: 10px;
+    margin-top: 4px;
+  }
+
+  /* Welcome Screen Animation */
+  .welcome-content {
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .panda-animation {
+    font-size: 100px;
+    animation: bounce 1.2s ease-in-out infinite;
+    margin-bottom: 20px;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-30px) scale(1.1); }
+  }
+
+  .welcome-title {
+    background: linear-gradient(135deg, #4caf50, #2196f3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  @media (max-height: 700px) {
+    header { height: 66px; }
+    .dpad { grid-template-columns: repeat(3, 54px); grid-template-rows: 54px 6px 54px; }
+    .dir-btn { width: 54px; height: 54px; font-size: 24px; }
+    .bottom-action-btn { height: 42px; font-size: 12px; }
+    .panda-animation { font-size: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<header>
+  <div class="header-top">
+    <h1>🐼 Bamboo Booper</h1>
+    <div class="level-badge" id="level-badge">
+      🎯 Level <span id="level">1</span>
+    </div>
+  </div>
+  <div id="stats">
+    <div>🎋 Eaten: <span id="score">0</span></div>
+    <div>🏆 Best: <span id="highscore">0</span></div>
+    <div>⚡ Energy: <span id="speed">1.0×</span></div>
+  </div>
+</header>
+
+<div id="game-zone">
+  <div id="canvas-wrapper">
+    <canvas id="game"></canvas>
+  </div>
+  <div id="mini-stats">
+    ⏱ <span id="time">00:00</span>  •  👣 Steps: <span id="moves">0</span>
+  </div>
+</div>
+
+<div class="bottom-stack">
+  <div class="controller-dock">
+    <div class="dpad">
+      <button class="dir-btn" id="up" aria-label="Up">↑</button>
+      <button class="dir-btn" id="left" aria-label="Left">←</button>
+      <button class="dir-btn" id="down" aria-label="Down">↓</button>
+      <button class="dir-btn" id="right" aria-label="Right">→</button>
+    </div>
+  </div>
+
+  <div class="bottom-action-bar">
+    <button class="bottom-action-btn" id="pause-bottom">⏸</button>
+    <button class="bottom-action-btn" id="start-pause">▶ Start</button>
+    <button class="bottom-action-btn" id="speed-control">
+      <span>Speed</span>
+      <span class="speed-triangles">▲<br>▼</span>
+      <span id="speed-value">1.0×</span>
+    </button>
+  </div>
+
+  <footer>
+    Bamboo Booper | Company: CodeTech | Lead Developer: Sachin Sheth
+  </footer>
+</div>
+
+</div>
+
+<!-- Welcome Overlay -->
+<div class="overlay" id="welcome-overlay">
+  <div class="welcome-content">
+    <div class="panda-animation">🐼</div>
+    <h2 class="welcome-title">Welcome to Bamboo Booper!</h2>
+    <p style="font-size: 1.1rem; color: #aaa;">Enter your name to start your bamboo adventure</p>
+    <input type="text" id="player-name-input" placeholder="Enter Your Name" maxlength="20" autocomplete="off" />
+    <button id="start-game-btn">🎮 Start Playing</button>
+  </div>
+</div>
+
+<!-- Game Over Overlay -->
+<div class="overlay" id="gameover-overlay">
+  <h2>🎮 Game Over!</h2>
+  
+  <div class="player-badge">
+    👤 <span id="gameover-player-name"></span>
+  </div>
+  
+  <p style="font-size: 2rem; margin: 20px 0; font-weight: 700;">
+    🎋 <span id="final-score">0</span> Bamboo Eaten
+  </p>
+  
+  <p style="font-size: 1.4rem; margin: 10px 0;">
+    🎯 Level <span id="final-level">1</span> Reached
+  </p>
+  
+  <div id="level-up-msg" style="display: none; margin: 20px 0;">
+    <h3 style="color: #ffd700; font-size: 2.2rem;">✨🎉 LEVEL UP! 🎉✨</h3>
+    <p style="font-size: 1.3rem; color: #4caf50;">Congratulations! You reached Level <span id="new-level"></span>!</p>
+  </div>
+
+  <div id="unlock-notification"></div>
+  
+  <button class="share-btn" id="share-btn">📤 Share My Score</button>
+  <button id="download-pdf-btn">📄 Download Score Card</button>
+  <button id="restart-btn">🔄 Play Again</button>
+  <button class="secondary" id="skins-btn-gameover">🎨 View Skins</button>
+</div>
+
+<!-- Pause Overlay -->
+<div class="overlay" id="pause-overlay">
+  <h2>⏸ Game Paused</h2>
+  <p style="font-size: 1.2rem; margin: 16px 0;">Player: <strong id="pause-player-name"></strong></p>
+  <button id="resume-btn">▶ Resume Game</button>
+  <button class="secondary" id="restart-pause-btn">🔄 Restart Game</button>
+</div>
+
+<!-- Skins Overlay -->
+<div class="overlay" id="skins-overlay">
+  <h2>🎨 Panda Skins Collection</h2>
+  <p style="font-size: 1rem; color: #aaa; margin-bottom: 20px;">Unlock skins by reaching higher levels!</p>
+  <div class="skin-selector" id="skin-selector"></div>
+  <button id="close-skins-btn">Close</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+// BAMBOO BOOPER - PERFECT VERSION
+// ═══════════════════════════════════════════════════════
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const highscoreEl = document.getElementById('highscore');
+const speedEl = document.getElementById('speed');
+const speedValueEl = document.getElementById('speed-value');
+const levelEl = document.getElementById('level');
+const startPauseBtn = document.getElementById('start-pause');
+const pauseBottomBtn = document.getElementById('pause-bottom');
+const speedControlBtn = document.getElementById('speed-control');
+const welcomeOverlay = document.getElementById('welcome-overlay');
+const gameoverOverlay = document.getElementById('gameover-overlay');
+const pauseOverlay = document.getElementById('pause-overlay');
+const skinsOverlay = document.getElementById('skins-overlay');
+const finalScoreEl = document.getElementById('final-score');
+const finalLevelEl = document.getElementById('final-level');
+const timeEl = document.getElementById('time');
+const movesEl = document.getElementById('moves');
+const restartBtn = document.getElementById('restart-btn');
+const shareBtn = document.getElementById('share-btn');
+const downloadPdfBtn = document.getElementById('download-pdf-btn');
+const playerNameInput = document.getElementById('player-name-input');
+const startGameBtn = document.getElementById('start-game-btn');
+
+const GRID = 28;
+let COLS, ROWS;
+let score = 0;
+let moves = 0;
+let startTime = 0;
+let highscore = parseInt(localStorage.getItem('bambooHigh')) || 0;
+let playerName = localStorage.getItem('playerName') || '';
+let currentLevel = 1;
+
+highscoreEl.textContent = highscore;
+
+let gameRunning = false;
+let gamePaused = false;
+let gameOver = false;
+let hasStartedGame = false;
+
+let panda = { x: 0, y: 0, dx: GRID, dy: 0, cells: [], maxCells: 4 };
+let bamboo = { x: 0, y: 0 };
+
+let lastTime = 0;
+let accumulator = 0;
+let baseInterval = 260;
+
+const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+let speedIdx = 3;
+
+let currentSkin = localStorage.getItem('currentSkin') || 'classic';
+
+// ═══════════════════════════════════════════════════════
+// SOUND EFFECTS
+// ═══════════════════════════════════════════════════════
+
+const sounds = {
+  eat: null,
+  gameOver: null,
+  levelUp: null
+};
+
+function initSounds() {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    sounds.eat = () => {
+      try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+      } catch (e) {}
+    };
+    
+    sounds.gameOver = () => {
+      try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 200;
+        oscillator.type = 'sawtooth';
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+      } catch (e) {}
+    };
+    
+    sounds.levelUp = () => {
+      try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+        oscillator.type = 'square';
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+      } catch (e) {}
+    };
+  } catch (e) {
+    console.log('Audio not supported');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// LEVELS SYSTEM
+// ═══════════════════════════════════════════════════════
+
+function calculateLevel(score) {
+  if (score < 10) return 1;
+  if (score < 25) return 2;
+  if (score < 50) return 3;
+  if (score < 75) return 4;
+  if (score < 100) return 5;
+  return 6;
+}
+
+function updateLevel() {
+  const newLevel = calculateLevel(score);
+  if (newLevel > currentLevel) {
+    currentLevel = newLevel;
+    showLevelUpEffect();
+    if (sounds.levelUp) sounds.levelUp();
+  }
+  levelEl.textContent = currentLevel;
+}
+
+function showLevelUpEffect() {
+  confetti();
+}
+
+// ═══════════════════════════════════════════════════════
+// SKINS SYSTEM
+// ═══════════════════════════════════════════════════════
+
+const SKINS = {
+  classic: { emoji: '🐼', name: 'Classic', level: 1 },
+  ninja: { emoji: '🥷', name: 'Ninja', level: 2 },
+  golden: { emoji: '✨', name: 'Golden', level: 3 },
+  ghost: { emoji: '👻', name: 'Ghost', level: 4 },
+  robot: { emoji: '🤖', name: 'Robot', level: 5 },
+  alien: { emoji: '👽', name: 'Alien', level: 6 }
+};
+
+function initSkins() {
+  const container = document.getElementById('skin-selector');
+  container.innerHTML = '';
+  
+  const maxLevel = calculateLevel(highscore);
+  
+  Object.entries(SKINS).forEach(([id, skin]) => {
+    const div = document.createElement('div');
+    div.className = 'skin-option';
+    if (id === currentSkin) div.classList.add('selected');
+    
+    const unlocked = maxLevel >= skin.level;
+    if (!unlocked) div.classList.add('locked');
+    
+    div.innerHTML = `
+      ${skin.emoji}
+      ${unlocked ? '' : '<span class="lock">🔒</span>'}
+      <div class="skin-name">${skin.name}</div>
+    `;
+    div.title = `${skin.name} - ${unlocked ? 'Unlocked' : `Unlock at Level ${skin.level}`}`;
+    
+    if (unlocked) {
+      div.onclick = () => {
+        currentSkin = id;
+        localStorage.setItem('currentSkin', id);
+        initSkins();
+      };
+    }
+    
+    container.appendChild(div);
+  });
+}
+
+document.getElementById('skins-btn-gameover').onclick = () => {
+  gameoverOverlay.classList.remove('show');
+  skinsOverlay.classList.add('show');
+  initSkins();
+};
+
+document.getElementById('close-skins-btn').onclick = () => {
+  skinsOverlay.classList.remove('show');
+  gameoverOverlay.classList.add('show');
+};
+
+// ═══════════════════════════════════════════════════════
+// SPEED CONTROL
+// ═══════════════════════════════════════════════════════
+
+function updateSpeedDisplay() {
+  const val = speeds[speedIdx].toFixed(2) + '×';
+  speedEl.textContent = val;
+  speedValueEl.textContent = val;
+}
+
+speedControlBtn.onclick = () => {
+  speedIdx = (speedIdx + 1) % speeds.length;
+  updateSpeedDisplay();
+};
+
+// ═══════════════════════════════════════════════════════
+// PLAYER NAME SYSTEM - FIXED WELCOME SCREEN
+// ═══════════════════════════════════════════════════════
+
+// Always show welcome screen if no game has been started
+if (playerName) {
+  playerNameInput.value = playerName;
+  // Still show welcome overlay but pre-fill name
+} else {
+  // Ensure welcome overlay is visible
+  welcomeOverlay.classList.add('show');
+}
+
+// Ensure welcome overlay is always visible on load
+setTimeout(() => {
+  if (!hasStartedGame) {
+    welcomeOverlay.classList.add('show');
+  }
+}, 100);
+
+startGameBtn.onclick = () => {
+  const name = playerNameInput.value.trim();
+  if (name) {
+    playerName = name;
+    localStorage.setItem('playerName', playerName);
+    welcomeOverlay.classList.remove('show');
+    hasStartedGame = true;
+    resetGame();
+    initSounds();
+  } else {
+    playerNameInput.focus();
+    playerNameInput.style.borderColor = '#f44336';
+    setTimeout(() => {
+      playerNameInput.style.borderColor = '#4caf50';
+    }, 500);
+  }
+};
+
+playerNameInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    startGameBtn.click();
+  }
+});
+
+// Focus on input when welcome screen shows
+playerNameInput.addEventListener('focus', () => {
+  playerNameInput.select();
+});
+
+// ═══════════════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════════════
+
+function confetti() {
+  const colors = ['#f44336', '#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#ffd700'];
+  for (let i = 0; i < 40; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.animationDelay = Math.random() * 0.5 + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }, i * 25);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHARE
+// ═══════════════════════════════════════════════════════
+
+shareBtn.onclick = async () => {
+  const text = `🐼 ${playerName} ate ${score} bamboo and reached Level ${currentLevel} in Bamboo Booper! Can you beat this? 🎋`;
+  const url = window.location.href;
+  
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Bamboo Booper', text, url });
+    } catch (err) {
+      copyToClipboard(text + '\n' + url);
+    }
+  } else {
+    copyToClipboard(text + '\n' + url);
+  }
+};
+
+function copyToClipboard(text) {
+  const el = document.createElement('textarea');
+  el.value = text;
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  
+  const btn = shareBtn;
+  const original = btn.textContent;
+  btn.textContent = '✅ Copied!';
+  setTimeout(() => btn.textContent = original, 2000);
+}
+
+// ═══════════════════════════════════════════════════════
+// ENHANCED PDF WITH MULTI-PAGE NAVIGATION
+// ═══════════════════════════════════════════════════════
+
+downloadPdfBtn.onclick = () => {
+  generateScoreCardPDF();
+};
+
+function generateScoreCardPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+  
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const centerX = pageWidth / 2;
+  const margin = 15;
+  
+  // ═══════════════════════════════════════════════════════
+  // PAGE 1 - MAIN SCORE CARD
+  // ═══════════════════════════════════════════════════════
+  
+  // Background
+  doc.setFillColor(76, 175, 80);
+  doc.rect(0, 0, pageWidth, 50, 'F');
+  
+  doc.setFillColor(232, 245, 233);
+  doc.rect(0, 50, pageWidth, pageHeight - 50, 'F');
+  
+  // Main border
+  doc.setLineWidth(1);
+  doc.setDrawColor(76, 175, 80);
+  doc.rect(margin, margin, pageWidth - 2*margin, pageHeight - 2*margin);
+  
+  // Title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(40);
+  doc.setTextColor(255, 255, 255);
+  doc.text('BAMBOO BOOPER', centerX, 25, { align: 'center' });
+  
+  // Subtitle
+  doc.setFontSize(16);
+  doc.setTextColor(255, 255, 255);
+  doc.text('OFFICIAL SCORE CARD', centerX, 40, { align: 'center' });
+  
+  // Decorative line
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.5);
+  doc.line(margin + 20, 45, pageWidth - margin - 20, 45);
+  
+  // Player name box
+  doc.setFillColor(255, 235, 59);
+  doc.roundedRect(margin + 10, 60, pageWidth - 2*margin - 20, 20, 3, 3, 'F');
+  doc.setDrawColor(255, 193, 7);
+  doc.setLineWidth(1);
+  doc.roundedRect(margin + 10, 60, pageWidth - 2*margin - 20, 20, 3, 3, 'S');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(27, 94, 32);
+  doc.text(playerName, centerX, 73, { align: 'center' });
+  
+  // Congratulations
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(14);
+  doc.setTextColor(76, 175, 80);
+  const congrats = currentLevel > calculateLevel(highscore - score) 
+    ? 'CONGRATULATIONS ON LEVELING UP!' 
+    : 'FANTASTIC GAME!';
+  doc.text(congrats, centerX, 95, { align: 'center' });
+  
+  // Stats box
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(76, 175, 80);
+  doc.setLineWidth(1.5);
+  doc.roundedRect(margin + 5, 105, pageWidth - 2*margin - 10, 90, 5, 5, 'FD');
+  
+  // Stats header
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(27, 94, 32);
+  doc.text('GAME STATISTICS', centerX, 118, { align: 'center' });
+  
+  // Stats
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(14);
+  doc.setTextColor(0, 0, 0);
+  
+  const stats = [
+    { label: 'Bamboo Eaten', value: String(score), icon: '🎋' },
+    { label: 'Level Reached', value: String(currentLevel), icon: '🎯' },
+    { label: 'Total Steps', value: String(moves), icon: '👣' },
+    { label: 'Time Played', value: timeEl.textContent, icon: '⏱' },
+    { label: 'Personal Best', value: String(highscore), icon: '🏆' }
+  ];
+  
+  let yPos = 135;
+  stats.forEach((stat, index) => {
+    if (index % 2 === 0) {
+      doc.setFillColor(245, 245, 245);
+      doc.rect(margin + 7, yPos - 6, pageWidth - 2*margin - 14, 11, 'F');
+    }
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.text(`${stat.label}:`, margin + 15, yPos);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(76, 175, 80);
+    doc.text(stat.value, pageWidth - margin - 15, yPos, { align: 'right' });
+    
+    yPos += 14;
+  });
+  
+  // Achievement
+  if (currentLevel > calculateLevel(highscore - score)) {
+    doc.setFillColor(255, 215, 0);
+    doc.circle(centerX, 215, 12, 'F');
+    doc.setDrawColor(255, 193, 7);
+    doc.setLineWidth(2);
+    doc.circle(centerX, 215, 12, 'S');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.setTextColor(0, 0, 0);
+    doc.text('⭐', centerX, 220, { align: 'center' });
+  }
+  
+  // Date
+  doc.setFillColor(240, 240, 240);
+  doc.roundedRect(margin + 20, 235, pageWidth - 2*margin - 40, 15, 3, 3, 'F');
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(100, 100, 100);
+  const date = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long',
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  doc.text(date, centerX, 245, { align: 'center' });
+  
+  // Footer
+  doc.setFillColor(76, 175, 80);
+  doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Bamboo Booper | Company: CodeTech | Lead Developer: Sachin Sheth', 
+    centerX, pageHeight - 8, { align: 'center' });
+  
+  // Page number
+  doc.setFontSize(10);
+  doc.text('Page 1 of 2', pageWidth - margin, pageHeight - 8, { align: 'right' });
+  
+  // ═══════════════════════════════════════════════════════
+  // PAGE 2 - SKIN COLLECTION & ACHIEVEMENTS
+  // ═══════════════════════════════════════════════════════
+  
+  doc.addPage();
+  
+  // Background
+  doc.setFillColor(232, 245, 233);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+  
+  // Header
+  doc.setFillColor(76, 175, 80);
+  doc.rect(0, 0, pageWidth, 35, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(28);
+  doc.setTextColor(255, 255, 255);
+  doc.text('YOUR COLLECTION', centerX, 23, { align: 'center' });
+  
+  // Border
+  doc.setLineWidth(1);
+  doc.setDrawColor(76, 175, 80);
+  doc.rect(margin, margin, pageWidth - 2*margin, pageHeight - 2*margin);
+  
+  // Skins section
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(27, 94, 32);
+  doc.text('Unlocked Skins', centerX, 50, { align: 'center' });
+  
+  const maxLevel = calculateLevel(highscore);
+  let skinY = 65;
+  
+  Object.entries(SKINS).forEach(([id, skin]) => {
+    const unlocked = maxLevel >= skin.level;
+    
+    // Skin box
+    if (unlocked) {
+      doc.setFillColor(197, 225, 165);
+    } else {
+      doc.setFillColor(245, 245, 245);
+    }
+    doc.roundedRect(margin + 10, skinY, pageWidth - 2*margin - 20, 18, 3, 3, 'F');
+    
+    if (unlocked) {
+      doc.setDrawColor(76, 175, 80);
+      doc.setLineWidth(1);
+      doc.roundedRect(margin + 10, skinY, pageWidth - 2*margin - 20, 18, 3, 3, 'S');
+    }
+    
+    // Skin info
+    doc.setFont('helvetica', unlocked ? 'bold' : 'normal');
+    doc.setFontSize(14);
+    doc.setTextColor(unlocked ? 27 : 150, unlocked ? 94 : 150, unlocked ? 32 : 150);
+    doc.text(`${skin.emoji} ${skin.name}`, margin + 20, skinY + 11);
+    
+    if (unlocked) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(76, 175, 80);
+      doc.text('✓ UNLOCKED', pageWidth - margin - 20, skinY + 11, { align: 'right' });
+    } else {
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Level ${skin.level} Required`, pageWidth - margin - 20, skinY + 11, { align: 'right' });
+    }
+    
+    skinY += 22;
+  });
+  
+  // Progress section
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(27, 94, 32);
+  doc.text('Your Progress', centerX, skinY + 15, { align: 'center' });
+  
+  // Progress box
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(76, 175, 80);
+  doc.setLineWidth(1.5);
+  doc.roundedRect(margin + 5, skinY + 25, pageWidth - 2*margin - 10, 50, 5, 5, 'FD');
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  
+  const unlockedCount = Object.values(SKINS).filter(s => maxLevel >= s.level).length;
+  const totalSkins = Object.keys(SKINS).length;
+  const nextLevel = maxLevel < 6 ? maxLevel + 1 : 6;
+  const bambooToNext = maxLevel < 6 ? (nextLevel === 2 ? 10 : nextLevel === 3 ? 25 : nextLevel === 4 ? 50 : nextLevel === 5 ? 75 : 100) - highscore : 0;
+  
+  let progressY = skinY + 38;
+  
+  doc.text(`Skins Unlocked: ${unlockedCount} / ${totalSkins}`, centerX, progressY, { align: 'center' });
+  progressY += 10;
+  
+  doc.text(`Highest Level: ${maxLevel}`, centerX, progressY, { align: 'center' });
+  progressY += 10;
+  
+  if (maxLevel < 6) {
+    doc.setTextColor(76, 175, 80);
+    doc.text(`${bambooToNext} bamboo needed for Level ${nextLevel}!`, centerX, progressY, { align: 'center' });
+  } else {
+    doc.setTextColor(255, 193, 7);
+    doc.text(`🏆 MAX LEVEL ACHIEVED! 🏆`, centerX, progressY, { align: 'center' });
+  }
+  
+  // Footer
+  doc.setFillColor(76, 175, 80);
+  doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Keep playing to unlock more skins!', centerX, pageHeight - 8, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.text('Page 2 of 2', pageWidth - margin, pageHeight - 8, { align: 'right' });
+  
+  // Save
+  const filename = `BambooBooper_${playerName.replace(/\s+/g, '_')}_Score${score}.pdf`;
+  doc.save(filename);
+  
+  // Feedback
+  const btn = downloadPdfBtn;
+  const original = btn.textContent;
+  btn.textContent = '✅ Downloaded!';
+  setTimeout(() => btn.textContent = original, 2000);
+}
+
+// ═══════════════════════════════════════════════════════
+// GAME LOGIC
+// ═══════════════════════════════════════════════════════
+
+function resize() {
+  const wrapper = document.getElementById('canvas-wrapper');
+  const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+  const gridSize = Math.floor(size / GRID) * GRID;
+  
+  canvas.width = gridSize;
+  canvas.height = gridSize;
+  COLS = gridSize / GRID;
+  ROWS = gridSize / GRID;
+}
+
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+resize();
+
+function randomBamboo() {
+  let x, y;
+  do {
+    x = Math.floor(Math.random() * COLS) * GRID;
+    y = Math.floor(Math.random() * ROWS) * GRID;
+  } while (panda.cells.some(s => s.x === x && s.y === y));
+  bamboo = { x, y };
+}
+
+function resetGame() {
+  panda.x = GRID * 4;
+  panda.y = Math.floor(ROWS / 2) * GRID;
+  panda.dx = GRID;
+  panda.dy = 0;
+  panda.cells = [];
+  panda.maxCells = 4;
+  for (let i = 0; i < 4; i++) {
+    panda.cells.push({ x: panda.x - i * GRID, y: panda.y });
+  }
+
+  score = 0;
+  moves = 0;
+  currentLevel = 1;
+  startTime = Date.now();
+  scoreEl.textContent = score;
+  movesEl.textContent = moves;
+  levelEl.textContent = currentLevel;
+  baseInterval = 260;
+  speedIdx = 3;
+  updateSpeedDisplay();
+  randomBamboo();
+  gameRunning = true;
+  gamePaused = false;
+  gameOver = false;
+  accumulator = 0;
+  startPauseBtn.textContent = '⏸';
+  gameoverOverlay.classList.remove('show');
+  pauseOverlay.classList.remove('show');
+}
+
+function changeDir(dx, dy) {
+  if (dx === -panda.dx && dy === -panda.dy) return;
+  panda.dx = dx;
+  panda.dy = dy;
+  moves++;
+  movesEl.textContent = moves;
+}
+
+// Controls
+document.addEventListener('keydown', e => {
+  if (!gameRunning || gameOver || gamePaused) return;
+  switch (e.key.toLowerCase()) {
+    case 'a': case 'arrowleft':  changeDir(-GRID, 0); break;
+    case 'd': case 'arrowright': changeDir(GRID, 0); break;
+    case 'w': case 'arrowup':    changeDir(0, -GRID); break;
+    case 's': case 'arrowdown':  changeDir(0, GRID); break;
+  }
+});
+
+['left', 'up', 'down', 'right'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) {
+    const handleInput = (e) => {
+      e.preventDefault();
+      if (!gameRunning || gameOver || gamePaused) return;
+      const directions = { left: [-GRID, 0], right: [GRID, 0], up: [0, -GRID], down: [0, GRID] };
+      changeDir(...directions[id]);
+    };
+    btn.addEventListener('pointerdown', handleInput);
+    btn.addEventListener('touchstart', handleInput, { passive: false });
+  }
+});
+
+startPauseBtn.onclick = () => {
+  if (gameOver) {
+    resetGame();
+  } else {
+    gameRunning = !gameRunning;
+    gamePaused = !gameRunning;
+    startPauseBtn.textContent = gameRunning ? '⏸' : '▶';
+  }
+};
+
+pauseBottomBtn.onclick = () => {
+  if (!gameRunning || gameOver) return;
+  gamePaused = !gamePaused;
+  pauseOverlay.classList.toggle('show', gamePaused);
+  document.getElementById('pause-player-name').textContent = playerName;
+};
+
+document.getElementById('resume-btn').onclick = () => {
+  gamePaused = false;
+  pauseOverlay.classList.remove('show');
+};
+
+document.getElementById('restart-pause-btn').onclick = () => {
+  gamePaused = false;
+  pauseOverlay.classList.remove('show');
+  resetGame();
+};
+
+restartBtn.onclick = () => {
+  gameoverOverlay.classList.remove('show');
+  resetGame();
+};
+
+function updateTimer() {
+  if (!gameRunning || gameOver || gamePaused) return;
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const min = Math.floor(elapsed / 60).toString().padStart(2, '0');
+  const sec = (elapsed % 60).toString().padStart(2, '0');
+  timeEl.textContent = `${min}:${sec}`;
+}
+
+// Drawing
+function drawPandaHead(x, y) {
+  const emoji = SKINS[currentSkin].emoji;
+  ctx.font = `${GRID * 0.9}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, x + GRID / 2, y + GRID / 2);
+}
+
+function drawBody(x, y) {
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x + GRID / 2, y + GRID / 2, GRID * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawBamboo(x, y) {
+  ctx.font = `${GRID * 0.9}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🎋', x + GRID / 2, y + GRID / 2);
+}
+
+function render() {
+  ctx.fillStyle = '#e8f5e9';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.strokeStyle = 'rgba(76, 175, 80, 0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= COLS; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * GRID, 0);
+    ctx.lineTo(i * GRID, canvas.height);
+    ctx.stroke();
+  }
+  for (let i = 0; i <= ROWS; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, i * GRID);
+    ctx.lineTo(canvas.width, i * GRID);
+    ctx.stroke();
+  }
+  
+  drawBamboo(bamboo.x, bamboo.y);
+  panda.cells.forEach((seg, i) => {
+    if (i === 0) drawPandaHead(seg.x, seg.y);
+    else drawBody(seg.x, seg.y);
+  });
+}
+
+function update() {
+  panda.x += panda.dx;
+  panda.y += panda.dy;
+
+  if (panda.x < 0 || panda.x >= canvas.width || panda.y < 0 || panda.y >= canvas.height) {
+    endGame();
+    return;
+  }
+
+  if (panda.x === bamboo.x && panda.y === bamboo.y) {
+    panda.maxCells++;
+    score++;
+    scoreEl.textContent = score;
+    randomBamboo();
+    
+    if (sounds.eat) sounds.eat();
+    
+    const oldLevel = currentLevel;
+    updateLevel();
+    
+    if (score % 10 === 0) confetti();
+  }
+
+  panda.cells.unshift({ x: panda.x, y: panda.y });
+  if (panda.cells.length > panda.maxCells) panda.cells.pop();
+
+  for (let i = 1; i < panda.cells.length; i++) {
+    if (panda.x === panda.cells[i].x && panda.y === panda.cells[i].y) {
+      endGame();
+      return;
+    }
+  }
+}
+
+function checkUnlocks() {
+  const unlocked = [];
+  const newMaxLevel = calculateLevel(score);
+  const oldMaxLevel = calculateLevel(highscore);
+  
+  Object.entries(SKINS).forEach(([id, skin]) => {
+    if (skin.level <= newMaxLevel && skin.level > oldMaxLevel) {
+      unlocked.push(skin);
+    }
+  });
+  
+  return unlocked;
+}
+
+function endGame() {
+  gameRunning = false;
+  gameOver = true;
+  
+  if (sounds.gameOver) sounds.gameOver();
+  
+  document.getElementById('gameover-player-name').textContent = playerName;
+  finalScoreEl.textContent = score;
+  finalLevelEl.textContent = currentLevel;
+  
+  const oldLevel = calculateLevel(highscore);
+  const newLevel = currentLevel;
+  
+  if (newLevel > oldLevel) {
+    document.getElementById('level-up-msg').style.display = 'block';
+    document.getElementById('new-level').textContent = newLevel;
+  } else {
+    document.getElementById('level-up-msg').style.display = 'none';
+  }
+  
+  const unlocked = checkUnlocks();
+  const unlockDiv = document.getElementById('unlock-notification');
+  if (unlocked.length > 0) {
+    unlockDiv.innerHTML = unlocked.map(skin => 
+      `<div style="background: linear-gradient(135deg, #ffd700, #ffa000); padding: 20px; border-radius: 20px; margin: 16px 0; border: 3px solid #ff8f00;">
+        <p style="font-size: 1.5rem; margin: 0; font-weight: 700;">🎉 Unlocked: ${skin.emoji} ${skin.name}!</p>
+      </div>`
+    ).join('');
+    confetti();
+  } else {
+    unlockDiv.innerHTML = '';
+  }
+  
+  gameoverOverlay.classList.add('show');
+  
+  if (score > highscore) {
+    highscore = score;
+    localStorage.setItem('bambooHigh', highscore);
+    highscoreEl.textContent = highscore;
+  }
+}
+
+function loop(ts) {
+  if (!lastTime) lastTime = ts;
+  const delta = ts - lastTime;
+  lastTime = ts;
+
+  if (gameRunning && !gameOver && !gamePaused) {
+    const interval = baseInterval / speeds[speedIdx];
+    accumulator += delta;
+    
+    while (accumulator >= interval) {
+      accumulator -= interval;
+      update();
+    }
+    
+    updateTimer();
+  }
+
+  render();
+  requestAnimationFrame(loop);
+}
+
+// Initialize
+initSkins();
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
