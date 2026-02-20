@@ -4,8 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BambooBooper">
+<meta name="application-name" content="BambooBooper">
 <meta name="theme-color" content="#4caf50">
+<meta name="description" content="Guide your panda to eat bamboo — a fun snake-style game!">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <title>🐼 Bamboo Booper</title>
 <style>
   * { 
@@ -470,6 +478,48 @@
     .bottom-action-btn { height: 42px; font-size: 12px; }
     .panda-animation { font-size: 80px; }
   }
+
+  /* ── PWA Install Banner ── */
+  #pwa-banner {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 99999;
+    background: linear-gradient(135deg, #1b5e20, #2e7d32);
+    color: white;
+    padding: 14px 16px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+    transform: translateY(110%);
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #pwa-banner.visible { transform: translateY(0); }
+  #pwa-banner .b-icon { font-size: 38px; flex-shrink: 0; }
+  #pwa-banner .b-text { flex: 1; }
+  #pwa-banner .b-text strong { display: block; font-size: 14px; font-weight: 800; }
+  #pwa-banner .b-text small { font-size: 11px; opacity: 0.82; }
+  #pwa-banner .b-actions { display: flex; flex-direction: column; gap: 6px; }
+  #pwa-install { background: #4caf50; color: #fff; border: none; border-radius: 20px;
+    padding: 9px 18px; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+  #pwa-dismiss { background: transparent; color: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.35); border-radius: 20px;
+    padding: 6px 18px; font-size: 11px; cursor: pointer; }
+
+  /* ── Offline Toast ── */
+  #net-toast {
+    position: fixed; top: 80px; left: 50%;
+    transform: translateX(-50%) translateY(-140px);
+    background: #e53935; color: #fff;
+    padding: 10px 22px; border-radius: 24px;
+    font-size: 13px; font-weight: 700;
+    z-index: 99998; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease;
+  }
+  #net-toast.up { transform: translateX(-50%) translateY(0); }
+  #net-toast.online { background: #43a047; }
 </style>
 </head>
 <body>
@@ -581,6 +631,22 @@
   <div class="skin-selector" id="skin-selector"></div>
   <button id="close-skins-btn">Close</button>
 </div>
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner">
+  <div class="b-icon">🐼</div>
+  <div class="b-text">
+    <strong>Install Bamboo Booper</strong>
+    <small>Play offline, anytime — add to home screen!</small>
+  </div>
+  <div class="b-actions">
+    <button id="pwa-install">⬇ Install App</button>
+    <button id="pwa-dismiss">Not now</button>
+  </div>
+</div>
+
+<!-- Offline Toast -->
+<div id="net-toast">📵 Offline — game still works!</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1506,6 +1572,78 @@ function loop(ts) {
 // Initialize
 initSkins();
 requestAnimationFrame(loop);
+
+// ═══════════════════════════════════════════
+// PWA — Service Worker Registration
+// ═══════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => {
+        console.log('✅ SW registered, scope:', reg.scope);
+      })
+      .catch(err => console.error('❌ SW failed:', err));
+  });
+}
+
+// ═══════════════════════════════════════════
+// PWA — Install Prompt
+// ═══════════════════════════════════════════
+let deferredPrompt = null;
+const pwaBanner   = document.getElementById('pwa-banner');
+const pwaInstall  = document.getElementById('pwa-install');
+const pwaDismiss  = document.getElementById('pwa-dismiss');
+
+// Don't show banner if already installed (running standalone)
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                  || window.navigator.standalone === true;
+
+if (!isStandalone) {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('✅ beforeinstallprompt fired — will show banner');
+
+    // Show banner after 3 seconds
+    if (!sessionStorage.getItem('pwaBannerDismissed')) {
+      setTimeout(() => pwaBanner.classList.add('visible'), 3000);
+    }
+  });
+}
+
+pwaInstall.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  pwaBanner.classList.remove('visible');
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log('Install outcome:', outcome);
+  deferredPrompt = null;
+});
+
+pwaDismiss.addEventListener('click', () => {
+  pwaBanner.classList.remove('visible');
+  sessionStorage.setItem('pwaBannerDismissed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('✅ App installed successfully!');
+  pwaBanner.classList.remove('visible');
+  deferredPrompt = null;
+});
+
+// ═══════════════════════════════════════════
+// PWA — Offline / Online Toast
+// ═══════════════════════════════════════════
+const netToast = document.getElementById('net-toast');
+
+function showNetToast(msg, online) {
+  netToast.textContent = msg;
+  netToast.className = online ? 'up online' : 'up';
+  setTimeout(() => { netToast.className = online ? 'online' : ''; }, 3500);
+}
+
+window.addEventListener('offline', () => showNetToast('📵 Offline — game still works!', false));
+window.addEventListener('online',  () => showNetToast('✅ Back online!', true));
 
 </script>
 </body>

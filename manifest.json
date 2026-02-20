@@ -35,11 +35,19 @@
       "purpose": "maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "screenshot.png",
+      "sizes": "1080x2060",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Bamboo Booper gameplay"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Play Now",
       "short_name": "Play",
-      "description": "Jump straight into a new game",
       "url": "./index.html",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
